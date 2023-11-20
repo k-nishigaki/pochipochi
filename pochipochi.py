@@ -9,11 +9,15 @@ app = Flask(__name__)
 
 auth = HTTPBasicAuth()
 
-MONGO_URL = os.environ.get('MONGODB_URI')
+MONGO_URL = os.environ.get('MONGODB_HOST')
+MONGO_DB = os.environ.get('MONGODB_NAME')
+MONGO_USER = os.environ.get('MONGODB_USER')
+MONGO_PASS = os.environ.get('MONGODB_PASS')
 
-if MONGO_URL:
-    con = MongoClient(MONGO_URL)
-    db = con[urlparse(MONGO_URL).path[1:]]
+if MONGO_URL and MONGO_USER and MONGO_PASS:
+    uri = f"mongodb+srv://{MONGO_USER}:{MONGO_PASS}@{MONGO_URL}/?retryWrites=true&w=majority"
+    con = MongoClient(uri)
+    db = con[MONGO_DB]
 else:
     con = MongoClient('localhost', 27017)
     db = con['pochipochi']
@@ -38,7 +42,6 @@ def post(name=''):
     
     count_obj = {'name': name, 'date': dt.now()}
     print(count_obj)
-    #db.count.save(count_obj)
     db.count.insert_one(count_obj)
     return Response(name)
 
