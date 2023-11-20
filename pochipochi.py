@@ -55,6 +55,8 @@ def iphone():
 def count():
     begin_time = request.args.get('begin_time')
     end_time = request.args.get('end_time')
+    print(begin_time)
+    print(end_time)
     print('begin', dt.strptime(begin_time, '%Y%m%d_%H%M%S'))
     print('end', dt.strptime(end_time, '%Y%m%d_%H%M%S'))
     group = {"$group": {"_id": "$name", "count": {"$sum": 1}}}
