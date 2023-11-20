@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% block content %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script src="{{ url_for('static', filename='js/post.js') }}"></script>
+<style type="text/css">
+* {
+    -webkit-appearance: none:
+}
+img{
+    width: 500px;
+    height: 500px;
+}
+</style>
+<center>
+<h2>ポチポチ祭 ～Ver.β～</h2>
+<table class="buttun_table" border=0>
+  <tr>
+    <th>
+    <button tyep="button", id="good", width="500px", hegith="500px">
+        <img src="{{ url_for('static', filename='images/good.png') }}", alt='good' />
+    </button>
+    </th>
+    <th>
+    <button tyep="button", id="i_see">
+        <img src="{{ url_for('static', filename='images/i_see.png') }}", alt='i_see' />
+    </button>
+    </th>
+  </tr>
+  <tr>
+    <th>
+    <button tyep="button", id="laugh">
+        <img src="{{ url_for('static', filename='images/laugh.png') }}", alt='laugh' />
+    </button>
+    </th>
+    <th>
+    <button tyep="button", id="question">
+        <img src="{{ url_for('static', filename='images/question.png') }}", alt='question' />
+    </button>
+    </th>
+  </tr>
+</table>
+<br/>
+<br/>
+<font size="32"><a href="/iphone">うまく表示されない iPhone の方はこちら<a/></font>
+</center>
+{% endblock %}
