@@ -16,7 +16,14 @@ MONGO_PASS = os.environ.get('MONGODB_PASS')
 
 if MONGO_URL and MONGO_USER and MONGO_PASS:
     uri = f"mongodb+srv://{MONGO_USER}:{MONGO_PASS}@{MONGO_URL}/?retryWrites=true&w=majority&appName=Pochipochi"
+    print(uri)
     con = MongoClient(uri)
+    try:
+        con.admin.command('ping')
+        print("Pinged your deployment. You successfully connected to MongoDB!")
+    except Exception as e:
+        print(e)
+
     db = con[MONGO_DB]
 else:
     con = MongoClient('localhost', 27017)
