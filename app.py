@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, Response
 import os
 from urllib.parse import urlparse
-from pymongo import MongoClient
+from pymongo.mongo_client import MongoClient
 from datetime import datetime as dt
 from flask_httpauth import HTTPBasicAuth
 
