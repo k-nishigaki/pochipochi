@@ -15,7 +15,7 @@ MONGO_USER = os.environ.get('MONGODB_USER')
 MONGO_PASS = os.environ.get('MONGODB_PASS')
 
 if MONGO_URL and MONGO_USER and MONGO_PASS:
-    uri = f"mongodb+srv://{MONGO_USER}:{MONGO_PASS}@{MONGO_URL}/?retryWrites=true&w=majority"
+    uri = f"mongodb+srv://{MONGO_USER}:{MONGO_PASS}@{MONGO_URL}/?retryWrites=true&w=majority&appName=Pochipochi"
     con = MongoClient(uri)
     db = con[MONGO_DB]
 else:
