@@ -52,11 +52,6 @@ def post(name=''):
     db.count.insert_one(count_obj)
     return Response(name)
 
-@app.route('/iphone')
-def iphone():
-    return render_template('iphone.html', title='pochiopchi iphone')
-
-     
 @app.route('/count/', methods=["GET"])
 @auth.login_required
 def count():

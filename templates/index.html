@@ -5,11 +5,24 @@
 <style type="text/css">
   * {
     -webkit-appearance: none;
+    appearance: none;
   }
 
   img {
     width: 500px;
     height: 500px;
+  }
+
+  .tap_action {
+    display: block;
+    width: 520px;
+    background: #ffffff;
+    box-sizing: border-box;
+    border-radius: 30px;
+  }
+
+  .tap_action:active {
+    background: #58e2ec;
   }
 </style>
 <center>
@@ -17,31 +30,28 @@
   <table class="buttun_table" border=0>
     <tr>
       <th>
-        <button tyep="button" , id="good" , width="500px" , hegith="500px">
+        <button class="tap_action" tyep="button" , id="good" , width="500px" , hegith="500px">
           <img src="{{ url_for('static', filename='images/good.png') }}" , alt='good' />
         </button>
       </th>
       <th>
-        <button tyep="button" , id="i_see">
+        <button class="tap_action" tyep="button" , id="i_see">
           <img src="{{ url_for('static', filename='images/i_see.png') }}" , alt='i_see' />
         </button>
       </th>
     </tr>
     <tr>
       <th>
-        <button tyep="button" , id="laugh">
+        <button class="tap_action" tyep="button" , id="laugh">
           <img src="{{ url_for('static', filename='images/laugh.png') }}" , alt='laugh' />
         </button>
       </th>
       <th>
-        <button tyep="button" , id="question">
+        <button class="tap_action" tyep="button" , id="question">
           <img src="{{ url_for('static', filename='images/question.png') }}" , alt='question' />
         </button>
       </th>
     </tr>
   </table>
-  <br />
-  <br />
-  <font size="32"><a href="/iphone">うまく表示されない iPhone の方はこちら<a /></font>
 </center>
 {% endblock %}
