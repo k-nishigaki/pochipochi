@@ -55,23 +55,113 @@ def post(name=''):
 @app.route('/count/', methods=["GET"])
 @auth.login_required
 def count():
-    begin_time = request.args.get('begin_time')
-    end_time = request.args.get('end_time')
-    print(begin_time)
-    print(end_time)
-    print('begin', dt.strptime(begin_time, '%Y%m%d_%H%M%S'))
-    print('end', dt.strptime(end_time, '%Y%m%d_%H%M%S'))
+    # 新UI: 日付 + 時刻範囲
+    date_str = request.args.get("date")          # "2025-11-28"
+    begin_t_str = request.args.get("begin_t")   # "10:00"
+    end_t_str = request.args.get("end_t")       # "12:30"
+
+    # 旧UI/互換:
+    begin_dt_str = request.args.get("begin_dt") # "2025-11-28T10:00"
+    end_dt_str = request.args.get("end_dt")
+    begin_time = request.args.get("begin_time") # "20251128_100000"
+    end_time = request.args.get("end_time")
+
+    # 1) 新UI（date + begin_t + end_t）を最優先
+    if date_str and begin_t_str and end_t_str:
+        try:
+            d = dt.strptime(date_str, "%Y-%m-%d").date()
+            bt = dt.strptime(begin_t_str, "%H:%M").time()
+            et = dt.strptime(end_t_str, "%H:%M").time()
+            start = dt.combine(d, bt)
+            end = dt.combine(d, et)
+        except ValueError:
+            now = dt.now()
+            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            end = start.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    # 2) 次点: datetime-local の begin_dt/end_dt（前回のUI互換）
+    elif begin_dt_str and end_dt_str:
+        try:
+            start = dt.strptime(begin_dt_str, "%Y-%m-%dT%H:%M")
+            end = dt.strptime(end_dt_str, "%Y-%m-%dT%H:%M")
+        except ValueError:
+            now = dt.now()
+            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            end = start.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    # 3) 旧: date だけ
+    elif date_str:
+        try:
+            target = dt.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            target = dt.now()
+        start = target.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    # 4) 旧: begin_time/end_time
+    elif begin_time and end_time:
+        start = dt.strptime(begin_time, "%Y%m%d_%H%M%S")
+        end = dt.strptime(end_time, "%Y%m%d_%H%M%S")
+
+    # 5) 何もなければ今日
+    else:
+        now = dt.now()
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    # start > end 対策（同日内の逆指定想定）
+    if start > end:
+        start, end = end, start
+
+    # Mongo 集計（名前別カウント）
     group = {"$group": {"_id": "$name", "count": {"$sum": 1}}}
-    match = {"$match": { "date": {"$gt": dt.strptime(begin_time, '%Y%m%d_%H%M%S'), "$lt": dt.strptime(end_time, '%Y%m%d_%H%M%S')} }}
+    match = {"$match": {"date": {"$gte": start, "$lte": end}}}
     sort = {"$sort": {"_id": 1}}
     pipe = [match, group, sort]
-    count_obj = db.count.aggregate(pipe)
-    count_lst = []
-    for doc in count_obj:
-        print(doc)
-        count_lst.append({"name": doc["_id"], "count": doc["count"]})
 
-    return render_template('count.html', title="ポチポチ祭 Ver. beta", count=count_lst)
+    count_obj = db.count.aggregate(pipe)
+    count_lst = [{"name": doc["_id"], "count": doc["count"]} for doc in count_obj]
+
+    # 合計回数
+    total = sum(c["count"] for c in count_lst)
+
+    # ---- 円グラフ用データ ----
+    ORDER = ["i_see", "laugh", "question", "good"]
+    count_dict = {c["name"]: c["count"] for c in count_lst}
+    labels = [k for k in ORDER if k in count_dict]
+    values = [count_dict[k] for k in labels]
+
+    # ---- UI初期値 ----
+    date_value = start.strftime("%Y-%m-%d")
+    begin_value = start.strftime("%H:%M")
+    end_value = end.strftime("%H:%M")
+
+    # タイトル（フォームから来る）
+    chart_title = request.args.get("title") or "ポチポチ内訳"
+
+    return render_template(
+        "count.html",
+        title="ポチポチ祭 Ver. beta",
+        count=count_lst,
+        date_value=date_value,
+        begin_value=begin_value,
+        end_value=end_value,
+        labels=labels,
+        values=values,
+        chart_title=chart_title,
+        total=total,
+    )
+
+    return render_template(
+        "count.html",
+        title="ポチポチ祭 Ver. beta",
+        count=count_lst,
+        date_value=date_value,
+        begin_value=begin_value,
+        end_value=end_value,
+        labels=labels,
+        values=values
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)

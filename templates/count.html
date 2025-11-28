@@ -1,8 +1,159 @@
 {% extends "layout.html" %}
 {% block content %}
 <h3>count</h3>
-<textarea rows="6", cols="30">
-{% for cnt in count %}{{ cnt["name"] }}	{{ cnt["count"] }}
-{% endfor %}
-</textarea>
+
+<form method="get" action="/count/">
+	<div>
+		<label>日付：</label>
+		<input type="date" name="date" value="{{ date_value }}">
+	</div>
+
+	<div>
+		<label>開始時刻：</label>
+		<input type="time" name="begin_t" value="{{ begin_value }}">
+	</div>
+
+	<div>
+		<label>終了時刻：</label>
+		<input type="time" name="end_t" value="{{ end_value }}">
+	</div>
+
+	<div>
+		<label>グラフタイトル：</label>
+		<input type="text" name="title" value="{{ chart_title }}" placeholder="例：昼休みの内訳">
+	</div>
+
+	<button type="submit">集計</button>
+</form>
+
+<hr>
+
+<!-- 円グラフ -->
+<div class="chart-wrap">
+	<canvas id="pieChart"></canvas>
+
+	<!-- 手作り凡例（ここに色とラベルを表示） -->
+	<div id="pieLegend" class="legend"></div>
+</div>
+
+<!-- 合計表示 -->
+<p style="font-size: 1.1em; margin-top: 8px;">
+	合計押下数： <strong>{{ total }}</strong> 回
+</p>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+	const labels = {{ labels | tojson }};
+	const values = {{ values | tojson }};
+	const chartTitle = {{ chart_title | tojson }};
+
+	// ---- 固定色（あなたの定義）----
+	const COLOR_MAP = {
+		"i_see": "#1f77b4",    // はっきり青
+		"laugh": "#ffd700",    // ゴールド（見分けやすい黄）
+		"question": "#d62728", // 赤
+		"good": "#2ca02c"      // 緑
+	};
+
+	// ---- 日本語表示名のマップ ----
+	const LABEL_NAME_MAP = {
+		"i_see": "なるほど",
+		"laugh": "ウケる",
+		"question": "謎",
+		"good": "いいね"
+	};
+
+	// 表示順を固定（凡例も毎回この順）
+	const ORDER = ["i_see", "laugh", "question", "good"];
+
+	// labels の順に色を割り当て（未知はグレー）
+	const colors = labels.map(l => COLOR_MAP[l] || "#9e9e9e");
+
+	const ctx = document.getElementById('pieChart');
+
+	if (labels.length > 0) {
+		new Chart(ctx, {
+			type: 'pie',
+			data: {
+				labels,
+				datasets: [{
+					data: values,
+					backgroundColor: colors,
+					borderColor: "#ffffff",
+					borderWidth: 2
+				}]
+			},
+			options: {
+				plugins: {
+					title: { display: true, text: chartTitle },
+					legend: { display: false },  // 公式凡例は使わない
+					tooltip: { enabled: false }  // 内訳は隠す
+				}
+			}
+		});
+
+		// ---- 手作り凡例（日本語名で表示）----
+		const legendEl = document.getElementById("pieLegend");
+		const present = new Set(labels);
+		const legendItems = ORDER.filter(k => present.has(k));
+
+		legendEl.innerHTML = legendItems.map(k => `
+      <div class="legend-item">
+        <span class="swatch" style="background:${COLOR_MAP[k]}"></span>
+        <span class="legend-label">${LABEL_NAME_MAP[k] || k}</span>
+      </div>
+    `).join("");
+
+	} else {
+		ctx.parentElement.innerHTML = "<p>この時間帯のデータはありません。</p>";
+	}
+</script>
+
+
+<style>
+	.chart-wrap {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+	}
+
+	#pieChart {
+		max-width: 320px;
+		max-height: 320px;
+	}
+
+	.legend {
+		flex-direction: column;
+		gap: 10px;
+		margin-top: 0;
+	}
+
+	/* 凡例スタイル */
+	.legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px 14px;
+		margin-top: 8px;
+		font-size: 0.95em;
+	}
+
+	.legend-item {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.swatch {
+		width: 12px;
+		height: 12px;
+		border-radius: 2px;
+		border: 1px solid #ddd;
+	}
+
+	.legend-label {
+		font-family: system-ui, sans-serif;
+	}
+</style>
+
 {% endblock %}
