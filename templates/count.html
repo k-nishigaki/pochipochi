@@ -4,27 +4,43 @@
 
 <form method="get" action="/count/">
 	<div>
-		<label>日付：</label>
+		<label>日付（JST）：</label>
 		<input type="date" name="date" value="{{ date_value }}">
 	</div>
 
 	<div>
-		<label>開始時刻：</label>
+		<label>開始時刻（JST）：</label>
 		<input type="time" name="begin_t" value="{{ begin_value }}">
 	</div>
 
 	<div>
-		<label>終了時刻：</label>
+		<label>終了時刻（JST）：</label>
 		<input type="time" name="end_t" value="{{ end_value }}">
 	</div>
 
 	<div>
 		<label>グラフタイトル：</label>
-		<input type="text" name="title" value="{{ chart_title }}" placeholder="例：昼休みの内訳">
+		<input type="text" name="title" value="{{ chart_title }}">
 	</div>
 
-	<button type="submit">集計</button>
+	<!-- ★ 集計ボタンを2つ -->
+	<button type="submit" name="tz" value="jst">
+		JSTで集計（UTCに変換）
+	</button>
+	<button type="submit" name="tz" value="utc">
+		UTCで集計（そのまま）
+	</button>
 </form>
+
+<hr>
+
+<!-- ★ JST/UTC 両方のプレビュー表示 -->
+<div style="margin: 6px 0 12px;">
+	<div>検索対象（JST）：{{ start_jst_str }} – {{ end_jst_str }}</div>
+	<div>検索対象（UTC）：{{ start_utc_str }} – {{ end_utc_str }}</div>
+	<small>現在の集計モード：{{ "JST→UTC変換" if tz_mode=="jst" else "UTCそのまま" }}</small>
+</div>
+
 
 <hr>
 

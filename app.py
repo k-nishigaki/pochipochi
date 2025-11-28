@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from pymongo.mongo_client import MongoClient
 from datetime import datetime as dt
 from flask_httpauth import HTTPBasicAuth
+from zoneinfo import ZoneInfo
 
 app = Flask(__name__)
 
@@ -47,18 +48,22 @@ def post(name=''):
     else: 
         name = "NoName"
     
-    count_obj = {'name': name, 'date': dt.now()}
+    count_obj = {'name': name, 'date': dt.now(JST)}
     print(count_obj)
     db.count.insert_one(count_obj)
     return Response(name)
 
+JST = ZoneInfo("Asia/Tokyo")
+UTC = ZoneInfo("UTC")
+
 @app.route('/count/', methods=["GET"])
 @auth.login_required
 def count():
-    # 新UI: 日付 + 時刻範囲
-    date_str = request.args.get("date")          # "2025-11-28"
-    begin_t_str = request.args.get("begin_t")   # "10:00"
-    end_t_str = request.args.get("end_t")       # "12:30"
+    date_str = request.args.get("date")
+    begin_t_str = request.args.get("begin_t")
+    end_t_str = request.args.get("end_t")
+
+    tz_mode = request.args.get("tz") or "jst"
 
     # 旧UI/互換:
     begin_dt_str = request.args.get("begin_dt") # "2025-11-28T10:00"
@@ -72,8 +77,19 @@ def count():
             d = dt.strptime(date_str, "%Y-%m-%d").date()
             bt = dt.strptime(begin_t_str, "%H:%M").time()
             et = dt.strptime(end_t_str, "%H:%M").time()
-            start = dt.combine(d, bt)
-            end = dt.combine(d, et)
+
+            start_naive = dt.combine(d, bt)
+            end_naive = dt.combine(d, et)
+
+            # ★ JST集計ボタンのときは JST として解釈 → UTCに変換して検索
+            if tz_mode == "jst":
+                start = start_naive.replace(tzinfo=JST).astimezone(UTC).replace(tzinfo=None)
+                end   = end_naive.replace(tzinfo=JST).astimezone(UTC).replace(tzinfo=None)
+            else:
+                # ★ UTC集計ボタンのときはそのまま UTC とみなす（naiveのまま）
+                start = start_naive
+                end = end_naive
+
         except ValueError:
             now = dt.now()
             start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -139,28 +155,33 @@ def count():
     # タイトル（フォームから来る）
     chart_title = request.args.get("title") or "ポチポチ内訳"
 
-    return render_template(
-        "count.html",
-        title="ポチポチ祭 Ver. beta",
-        count=count_lst,
-        date_value=date_value,
-        begin_value=begin_value,
-        end_value=end_value,
-        labels=labels,
-        values=values,
-        chart_title=chart_title,
-        total=total,
-    )
+    # ★ 画面表示用に JST/UTC どっちも作る
+    #   start/end は “検索に使うUTC naive” なので JSTに戻して表示
+    start_utc = start.replace(tzinfo=UTC)
+    end_utc = end.replace(tzinfo=UTC)
+    start_jst = start_utc.astimezone(JST)
+    end_jst = end_utc.astimezone(JST)
 
     return render_template(
         "count.html",
         title="ポチポチ祭 Ver. beta",
         count=count_lst,
-        date_value=date_value,
-        begin_value=begin_value,
-        end_value=end_value,
         labels=labels,
-        values=values
+        values=values,
+        chart_title=chart_title,
+        total=total,
+        tz_mode=tz_mode,  # ★どのボタンで集計したか
+
+        # ★プレビュー用文字列
+        start_jst_str=start_jst.strftime("%Y-%m-%d %H:%M"),
+        end_jst_str=end_jst.strftime("%Y-%m-%d %H:%M"),
+        start_utc_str=start_utc.strftime("%Y-%m-%d %H:%M"),
+        end_utc_str=end_utc.strftime("%Y-%m-%d %H:%M"),
+
+        # 入力欄の初期値（JST基準の見た目にしたいので JST側）
+        date_value=start_jst.strftime("%Y-%m-%d"),
+        begin_value=start_jst.strftime("%H:%M"),
+        end_value=end_jst.strftime("%H:%M"),
     )
 
 if __name__ == '__main__':
